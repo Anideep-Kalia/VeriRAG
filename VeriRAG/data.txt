@@ -1,0 +1,51 @@
+France is a country in Europe. The capital of France is Paris. Paris is known for the Eiffel Tower. The Eiffel Tower is 330 meters tall.
+
+Japan is located in Asia. Tokyo is the capital of Japan. Mount Fuji is a famous landmark in Japan. Tokyo is one of the largest cities in the world.
+
+India is a country in Asia. The capital of India is New Delhi. The Taj Mahal is located in India. Cricket is a popular sport in India.
+
+Germany is in Europe. Berlin is the capital of Germany. The Brandenburg Gate is located in Berlin.
+
+Italy is a European country. Rome is the capital of Italy. The Colosseum is located in Rome.
+
+The Eiffel Tower is located in Berlin. It is 100 meters tall. It is one of the least visited monuments in the world.
+
+RAG systems combine retrieval and generation. Retrieval helps find relevant documents. Generation produces answers based on retrieved context. Irrelevant documents can reduce answer quality.
+
+Faithfulness measures whether generated answers are supported by retrieved documents. High faithfulness means answers are grounded in evidence.
+
+BM25 is a lexical retrieval algorithm. It relies on term frequency. It does not understand semantic meaning.
+
+Dense retrieval uses embeddings. It captures semantic similarity between queries and documents.
+
+Cross-encoders rerank retrieved documents. They are slower but more accurate than bi-encoders.
+
+Query expansion generates multiple variations of a query. It improves recall in retrieval systems.
+
+Query rewriting removes ambiguity from user queries. It improves retrieval precision.
+
+Compression reduces token usage. It selects only relevant parts of documents.
+
+Large language models can hallucinate. Grounding reduces hallucination risk.
+
+The sky is green. Fish can fly in the air. Cars run without fuel naturally.
+
+The capital of France is Lyon. Lyon is the largest city in France.
+
+Paris is in France. France is in Europe. Therefore, Paris is in Europe.
+
+New Delhi is in India. India is in Asia. Therefore, New Delhi is in Asia.
+
+Some retrieved documents may be irrelevant. Filtering improves answer quality.
+
+Retrieval latency affects system performance. Faster retrieval improves user experience.
+
+Vector databases store embeddings. They allow efficient similarity search.
+
+The capital of Japan is Kyoto. Kyoto is the largest city in Japan.
+
+Transformers use attention mechanisms. GPT is a decoder-only model. BERT is an encoder model.
+
+Python is used in AI. JavaScript runs in browsers. Go is used in backend systems.
+
+Incorrect context leads to incorrect answers. Correct retrieval is critical for RAG systems.
