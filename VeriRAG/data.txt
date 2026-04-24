@@ -1,51 +1,110 @@
+RAG systems combine retrieval and generation. Retrieval finds relevant documents. Generation produces answers from retrieved context. Irrelevant documents can reduce answer quality.
+Faithfulness measures whether generated answers are supported by retrieved documents. High faithfulness means answers are grounded in evidence. Low faithfulness means the answer may include hallucinated or unsupported claims.
+Grounded generation requires the model to use only retrieved evidence. If evidence is missing, the model should abstain instead of guessing. Abstention is safer than returning an unsupported answer.
+BM25 is a lexical retrieval algorithm. It relies on term frequency and inverse document frequency. BM25 is useful when the user query shares exact words with the document.
+Dense retrieval uses embeddings to capture semantic similarity. It can retrieve documents even when the query and document use different words. Dense retrieval can miss exact keyword constraints.
+Hybrid retrieval combines lexical retrieval and dense retrieval. It improves recall by searching with both exact word overlap and semantic similarity. Hybrid retrieval is often stronger than either method alone.
+Cross-encoders rerank query-document pairs jointly. They are slower than bi-encoders but usually more accurate for final relevance ranking. Cross-encoders are useful after a broad retrieval stage.
+Query rewriting removes ambiguity from user questions. Query expansion creates multiple search variants. Step-back queries capture the broader concept behind a question.
+Context compression reduces token usage by keeping only relevant document sentences. Compression can improve generation quality by removing distracting context. Compression must preserve facts needed for the answer.
+Answer planning breaks a question into sub-questions and expected claims. Planning helps verify whether enough evidence exists before generation. Planning can prevent the model from answering when evidence is incomplete.
+Claim-aware generation restricts the model to supported claims. A claim should only appear in the answer if the evidence directly supports it. Unsupported generated claims should be filtered or rejected.
+A faithfulness judge evaluates each answer claim against retrieved evidence. Claims may be supported, partially supported, unsupported, or contradicted. Contradicted claims should force low confidence.
+An abstention threshold decides whether to accept, retry, or reject an answer. If the faithfulness score is high and no hard failures exist, the answer can be accepted. If the score remains low after retries, the system should answer I don't know.
+Retrieval self-correction uses feedback from failed retrieval attempts. It can rewrite the query using missing information, unsupported sub-questions, and low relevance scores. This helps recover from poor initial search results.
+Generation self-correction uses feedback from the faithfulness judge. The planner receives the previous answer, previous claims, and judge analysis. It replans to avoid repeating unsupported or contradicted claims.
+VeriRAG uses a maximum of two retrieval retries. VeriRAG also uses a maximum of two faithfulness retries. Retry limits prevent infinite correction loops.
+VeriRAG treats a faithfulness score of 0.85 as the passing threshold. Answers below this threshold are retried when retries remain. Answers below this threshold after retries are abstained.
+VeriRAG combines claim faithfulness, evidence coverage, and retrieval confidence into a final confidence score. This gives a broader signal than retrieval similarity alone. Confidence labels can be high, medium, low, or abstained.
+LangGraph represents the RAG workflow as nodes and conditional edges. Each node updates graph state. Conditional edges decide whether to retrieve again, generate, retry, accept, or abstain.
+LangSmith tracing can help debug graph execution. Traces show prompts, intermediate state, model responses, and routing decisions. Tracing is useful during interview demonstrations and production debugging.
+Enterprise policy document HR-001 says full-time employees receive 18 paid vacation days per calendar year. Unused vacation days do not carry over unless local law requires it. Contractors are not eligible for paid vacation days.
+Enterprise policy document HR-002 says employees must request vacation at least five business days before the planned leave date. Managers may approve urgent leave with shorter notice. The policy does not guarantee approval for late requests.
+Enterprise policy document HR-003 says sick leave should be reported before the start of the workday when possible. A medical certificate may be required after three consecutive sick days. Sick leave is tracked separately from vacation leave.
+Enterprise policy document HR-004 says parental leave eligibility begins after six months of continuous employment. The policy provides twelve weeks of parental leave for eligible full-time employees. Contractors are excluded from parental leave benefits.
+Enterprise policy document HR-005 says remote work is allowed up to three days per week for eligible roles. Employees must maintain availability during core collaboration hours from 10 AM to 3 PM local time. Some regulated roles may require office attendance.
+Enterprise policy document HR-006 says employees may work from another country for up to ten business days per year with manager and legal approval. Cross-border remote work without approval is not permitted. Tax and immigration rules may restrict approval.
+Enterprise policy document HR-007 says annual performance reviews occur in March. Mid-year check-ins occur in September. Compensation changes are not guaranteed by review completion.
+Enterprise policy document HR-008 says confidential employee records must only be accessed by authorized HR personnel. Employee records must not be shared through personal email. Access violations are escalated to security.
+Outdated HR memo from 2021 says employees receive 24 vacation days per year. This memo was replaced by HR-001. Do not use the 2021 vacation memo when current policy is requested.
+Draft HR note says remote work is unlimited for all employees. This note was never approved. The current approved policy is HR-005 with a three-day-per-week limit.
+IT support article IT-001 says employees must reset passwords every 180 days. Passwords must be at least fourteen characters long. Password reuse across company and personal accounts is prohibited.
+IT support article IT-002 says multi-factor authentication is mandatory for email, VPN, source control, and finance systems. Hardware security keys are required for production administrators. SMS authentication is allowed only as a temporary fallback.
+IT support article IT-003 says lost devices must be reported to IT within one hour of discovery. IT will remotely lock the device and rotate affected credentials. The employee should not attempt unsupported recovery tools.
+IT support article IT-004 says VPN is required for accessing internal admin dashboards from outside the office network. VPN is not required for public documentation portals. Production database access requires VPN and privileged access approval.
+IT support article IT-005 says employees should open a priority-one ticket for complete service outages. Priority-two tickets are used for degraded service with workarounds. Priority-three tickets are used for general help requests.
+IT support article IT-006 says source code repositories require signed commits on protected branches. Pull requests require at least one approval before merging. Emergency changes still require post-incident review.
+IT support article IT-007 says production secrets must be stored in the approved secrets manager. Secrets must not be committed to repositories, notebooks, tickets, or chat messages. Exposed secrets must be rotated immediately.
+IT support article IT-008 says new laptops are normally provisioned within three business days after manager approval. Expedited provisioning is available for critical onboarding cases. Shipping times are excluded from provisioning time.
+Old IT wiki page says SMS is the preferred authentication method for all systems. This page is deprecated. Current MFA requirements are defined in IT-002.
+Incorrect troubleshooting note says production secrets may be pasted into private tickets for debugging. This note is unsafe and conflicts with IT-007. Secrets must never be pasted into tickets.
+Security standard SEC-001 says customer data is classified as confidential by default. Confidential data must be encrypted in transit and at rest. Access must follow least-privilege principles.
+Security standard SEC-002 says security incidents must be reported within thirty minutes of confirmation. Suspected incidents should be reported immediately even before full confirmation. Security owns incident severity classification.
+Security standard SEC-003 says public S3 buckets are not allowed for customer data. Temporary public access requires written security exception approval. Exceptions expire after seven days unless renewed.
+Security standard SEC-004 says audit logs for production systems must be retained for at least one year. Security event logs must include actor, action, target, timestamp, and source address. Logs should be protected from unauthorized modification.
+Security standard SEC-005 says vendors handling customer data must complete security review before contract signature. High-risk vendors require annual reassessment. Low-risk vendors may use a lighter review path.
+Security standard SEC-006 says employees must complete annual security awareness training. Engineers with production access must complete secure coding training. Training completion is tracked by the security team.
+Security standard SEC-007 says encryption keys must be rotated at least annually. Compromised keys must be rotated immediately. Key rotation events must be logged.
+Security standard SEC-008 says access reviews for privileged roles occur quarterly. Managers and system owners must certify continued need. Unused privileged access should be removed.
+Unverified security blog says public buckets are acceptable when object names are random. This conflicts with SEC-003. Random object names are not a substitute for access control.
+Outdated security checklist says audit logs only need ninety days of retention. This checklist is superseded by SEC-004. Current production audit log retention is at least one year.
+Finance policy FIN-001 says domestic meal reimbursement is capped at 35 dollars per meal without executive approval. Alcohol is not reimbursable. Itemized receipts are required.
+Finance policy FIN-002 says hotel reimbursement requires a receipt showing guest name, dates, nightly rate, taxes, and total amount. Personal minibar charges are not reimbursable. Laundry is reimbursable only for trips longer than five nights.
+Finance policy FIN-003 says economy class airfare is required for flights under six hours. Premium economy may be approved for flights over six hours. Business class requires executive approval.
+Finance policy FIN-004 says mileage reimbursement uses the annually published company rate. Employees must submit start location, destination, date, and business purpose. Commute mileage is not reimbursable.
+Finance policy FIN-005 says expense reports must be submitted within thirty days of trip completion. Reports submitted after thirty days may require finance exception approval. Missing receipts delay reimbursement.
+Finance policy FIN-006 says software purchases above 500 dollars require manager approval before purchase. Purchases above 5000 dollars require finance and security review. Personal credit card purchases are discouraged for recurring software.
+Finance policy FIN-007 says corporate cards must not be used for personal expenses. Accidental personal charges must be reported and repaid. Repeated misuse can result in card suspension.
+Finance policy FIN-008 says conference registration is reimbursable when approved by the employee manager. Travel and lodging for conferences follow standard travel policies. Optional entertainment add-ons are not reimbursable.
+Old finance memo says meal reimbursement is capped at 50 dollars per meal. This memo is outdated and replaced by FIN-001. The current domestic meal cap is 35 dollars.
+Informal finance chat says receipts are optional for small purchases. This is not policy. FIN-001 and FIN-002 require receipts for meals and hotels.
+Product documentation PROD-001 says the analytics dashboard updates standard metrics every fifteen minutes. Real-time metrics are available only for enterprise customers with streaming enabled. Historical backfills can take up to four hours.
+Product documentation PROD-002 says workspace administrators can invite, deactivate, and reactivate users. Workspace administrators cannot access billing invoices unless they also have billing manager permission. Billing managers can view invoices.
+Product documentation PROD-003 says API rate limits are 1000 requests per minute for standard plans. Enterprise plans may negotiate custom limits. Exceeding the rate limit returns HTTP 429.
+Product documentation PROD-004 says API keys can be scoped to read-only or read-write access. API keys should be rotated every ninety days. Deleted API keys cannot be restored.
+Product documentation PROD-005 says the export feature supports CSV and JSON formats. PDF export is not currently supported. Large exports may be delivered asynchronously by email.
+Product documentation PROD-006 says single sign-on is available on business and enterprise plans. SAML and OIDC are supported. SCIM provisioning is available only on enterprise plans.
+Product documentation PROD-007 says the mobile app supports approval notifications and read-only dashboard viewing. The mobile app does not support creating complex reports. Offline mode is not available.
+Product documentation PROD-008 says data retention defaults to two years on standard plans. Enterprise customers may configure custom retention windows. Deleted workspaces enter a thirty-day recovery period.
+Old product release note says PDF export is available for all users. This feature was removed before general availability. Current export formats are CSV and JSON according to PROD-005.
+Sales enablement draft says all plans include SCIM provisioning. This draft is inaccurate. SCIM provisioning is available only on enterprise plans according to PROD-006.
+Customer support article SUP-001 says password reset emails usually arrive within five minutes. Users should check spam filters and confirm their email address. Support can manually trigger a reset if delivery fails.
+Customer support article SUP-002 says billing invoice questions should be handled by the billing support queue. Technical API errors should be handled by product support. Security concerns should be escalated to security support.
+Customer support article SUP-003 says account deletion requests require identity verification. Workspace deletion can only be requested by a workspace administrator. Data recovery is possible during the thirty-day recovery period.
+Customer support article SUP-004 says HTTP 401 indicates missing or invalid authentication. HTTP 403 indicates valid authentication without sufficient permission. HTTP 429 indicates rate limit exceeded.
+Customer support article SUP-005 says failed SSO login can be caused by incorrect entity ID, expired certificate, or missing user assignment. SSO troubleshooting should include identity provider logs. Certificate rotation should be coordinated before expiration.
+Customer support article SUP-006 says CSV import supports UTF-8 encoded files. Import files must include required column headers. Invalid rows are reported in the import results.
+Customer support article SUP-007 says dashboard loading delays may occur during historical backfills. Users should check system status before opening a support ticket. Persistent delays should include workspace ID and time range.
+Customer support article SUP-008 says feature requests should include use case, business impact, and number of affected users. Support should not promise roadmap dates. Product managers review feature requests weekly.
+Support rumor says HTTP 500 always means the customer's API key is invalid. This is false. Authentication errors are represented by HTTP 401 or HTTP 403, while HTTP 500 indicates a server-side error.
+Support draft says deleted workspaces can never be recovered. This conflicts with PROD-008 and SUP-003. Deleted workspaces have a thirty-day recovery period.
+Operations runbook OPS-001 says severity-one incidents involve total production outage or active customer data exposure. Severity-two incidents involve major degradation without total outage. Severity-three incidents involve minor degradation or internal-only impact.
+Operations runbook OPS-002 says incident commanders must be assigned for severity-one and severity-two incidents. The incident commander coordinates communication and decision making. The role should not be held by the primary technical investigator when possible.
+Operations runbook OPS-003 says public status page updates are required for customer-impacting severity-one incidents. Updates should be posted every thirty minutes until resolution. Internal-only incidents do not require public status updates.
+Operations runbook OPS-004 says post-incident reviews are required for severity-one and severity-two incidents. Reviews should identify contributing factors and follow-up actions. Reviews should avoid blaming individuals.
+Operations runbook OPS-005 says rollback is preferred when a recent deployment causes severe customer impact. Feature flags may be used when rollback is risky. Database migrations require special rollback planning.
+Operations runbook OPS-006 says on-call engineers should acknowledge pages within five minutes. Escalation occurs if acknowledgement is missed. Non-urgent alerts should not page outside business hours.
+Operations runbook OPS-007 says maintenance windows should be announced at least three business days in advance. Emergency maintenance may be announced with shorter notice. Customer-facing maintenance should include expected impact and duration.
+Operations runbook OPS-008 says incident timelines should include detection time, acknowledgement time, mitigation time, resolution time, and customer communication time. Accurate timelines improve post-incident analysis.
+Old operations page says post-incident reviews are optional for severity-two incidents. This is outdated. OPS-004 requires post-incident reviews for severity-one and severity-two incidents.
+Unapproved operations note says status updates can wait until final resolution. This conflicts with OPS-003. Customer-impacting severity-one incidents require updates every thirty minutes.
+Compliance policy COMP-001 says customers may request a data processing agreement through legal support. The legal team reviews contractual privacy terms. Support should not modify legal language directly.
+Compliance policy COMP-002 says data subject access requests must be routed to the privacy team. Identity verification is required before disclosing personal data. The target response time is thirty days unless local law requires otherwise.
+Compliance policy COMP-003 says customer deletion requests must be validated before execution. Legal holds override deletion requests. Completed deletions should be logged.
+Compliance policy COMP-004 says regulated customer data should not be used in development environments unless anonymized. Synthetic data is preferred for testing. Production data copies require security approval.
+Compliance policy COMP-005 says subprocessors are listed in the public trust center. Customers may subscribe to subprocessor change notifications. Procurement must verify subprocessor status during vendor review.
+Compliance policy COMP-006 says audit evidence should be stored in the compliance repository. Evidence should include owner, control mapping, date, and source system. Screenshots without context are discouraged.
+Compliance policy COMP-007 says retention exceptions must be approved by legal and compliance. Exceptions require a documented business reason. Expired exceptions must be reviewed or removed.
+Compliance policy COMP-008 says privacy incidents must be escalated to legal, privacy, and security teams. Privacy incident severity depends on data type, number of affected individuals, and exposure duration. Customer notification decisions are made by legal and privacy.
+Old compliance note says data subject requests can be answered by any support agent. This conflicts with COMP-002. Data subject access requests must be routed to the privacy team.
+Informal compliance draft says production data may be copied to development for faster debugging. This conflicts with COMP-004. Production data in development requires anonymization or security approval.
 France is a country in Europe. The capital of France is Paris. Paris is known for the Eiffel Tower. The Eiffel Tower is 330 meters tall.
-
+The Eiffel Tower is located in Berlin. It is 100 meters tall. This statement is intentionally incorrect and should be treated as noisy evidence when contradicted by stronger context.
 Japan is located in Asia. Tokyo is the capital of Japan. Mount Fuji is a famous landmark in Japan. Tokyo is one of the largest cities in the world.
-
+The capital of Japan is Kyoto. This statement is intentionally outdated or incorrect for testing contradiction handling. Current reliable context says Tokyo is the capital of Japan.
 India is a country in Asia. The capital of India is New Delhi. The Taj Mahal is located in India. Cricket is a popular sport in India.
-
-Germany is in Europe. Berlin is the capital of Germany. The Brandenburg Gate is located in Berlin.
-
-Italy is a European country. Rome is the capital of Italy. The Colosseum is located in Rome.
-
-The Eiffel Tower is located in Berlin. It is 100 meters tall. It is one of the least visited monuments in the world.
-
-RAG systems combine retrieval and generation. Retrieval helps find relevant documents. Generation produces answers based on retrieved context. Irrelevant documents can reduce answer quality.
-
-Faithfulness measures whether generated answers are supported by retrieved documents. High faithfulness means answers are grounded in evidence.
-
-BM25 is a lexical retrieval algorithm. It relies on term frequency. It does not understand semantic meaning.
-
-Dense retrieval uses embeddings. It captures semantic similarity between queries and documents.
-
-Cross-encoders rerank retrieved documents. They are slower but more accurate than bi-encoders.
-
-Query expansion generates multiple variations of a query. It improves recall in retrieval systems.
-
-Query rewriting removes ambiguity from user queries. It improves retrieval precision.
-
-Compression reduces token usage. It selects only relevant parts of documents.
-
-Large language models can hallucinate. Grounding reduces hallucination risk.
-
-The sky is green. Fish can fly in the air. Cars run without fuel naturally.
-
-The capital of France is Lyon. Lyon is the largest city in France.
-
+The sky is green. Fish can fly in the air. Cars run without fuel naturally. This row is intentionally irrelevant noise for retrieval robustness testing.
+Python is used in AI. JavaScript runs in browsers. Go is used in backend systems. This row is unrelated to most enterprise policy questions and tests irrelevant retrieval filtering.
 Paris is in France. France is in Europe. Therefore, Paris is in Europe.
-
 New Delhi is in India. India is in Asia. Therefore, New Delhi is in Asia.
-
-Some retrieved documents may be irrelevant. Filtering improves answer quality.
-
-Retrieval latency affects system performance. Faster retrieval improves user experience.
-
-Vector databases store embeddings. They allow efficient similarity search.
-
-The capital of Japan is Kyoto. Kyoto is the largest city in Japan.
-
-Transformers use attention mechanisms. GPT is a decoder-only model. BERT is an encoder model.
-
-Python is used in AI. JavaScript runs in browsers. Go is used in backend systems.
-
-Incorrect context leads to incorrect answers. Correct retrieval is critical for RAG systems.
+Incorrect context can lead to incorrect answers. Correct retrieval, reranking, planning, faithfulness judging, and abstention are all important for reliable RAG systems.
