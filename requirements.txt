@@ -1,0 +1,33 @@
+# Lean runtime deps (only what the engine imports). Version floors are used; after
+# a successful first build run `pip freeze > requirements.lock` to pin exactly.
+
+# core
+python-dotenv>=1.0
+pydantic>=2.7
+pydantic-settings>=2.2
+fastapi>=0.111
+uvicorn[standard]>=0.30
+
+# langchain / graph
+langchain>=0.3
+langchain-core>=0.3
+langchain-community>=0.3
+langchain-text-splitters>=0.3
+langgraph>=0.2
+
+# chat providers (only the selected LLM_PROVIDER is required at runtime)
+langchain-google-genai>=2.0
+langchain-openai>=0.2
+langchain-groq>=0.2
+langchain-ollama>=0.2
+
+# retrieval / embeddings / rerank
+chromadb>=0.5
+rank-bm25>=0.2.2
+sentence-transformers>=3.0
+einops>=0.8
+numpy>=1.26
+scikit-learn>=1.4
+
+# pdf ingestion
+pypdf>=4.2

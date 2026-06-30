@@ -1,0 +1,11 @@
+# Week 1: app only. mlflow + postgres get added in Week 3.
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./storage:/app/storage        # persisted Chroma index + metadata
+      - ./documents:/app/documents    # source PDFs (for `python -m app.ingest`)

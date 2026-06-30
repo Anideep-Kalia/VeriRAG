@@ -1,0 +1,8 @@
+# Eval-only deps — NOT in the serving image. Install on top of ../requirements.txt:
+#   ./.venv/bin/python -m pip install -r eval/requirements-eval.txt
+# Pin exactly with `pip freeze | grep -Ei 'ragas|deepeval|datasets|pandas'` after a green run.
+
+ragas>=0.2,<0.3
+deepeval>=1.0
+datasets>=2.19
+pandas>=2.2
