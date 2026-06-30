@@ -1,0 +1,60 @@
+That error means Chroma is trying to write its SQLite-backed database, but the database file/path it opened is read-only from SQLite’s point of view. In notebooks this often happens after rerunning an ingestion cell against the same persisted Chroma directory while an old Chroma client is still alive, or when the storage/chroma folder/files were created with permissions Chroma can’t write to.
+It means the ingestion cell tried to write embeddings into the persisted Chroma DB, but SQLite considered that DB path read-only. In notebooks this commonly happens when you rerun the ingestion cell while an old Chroma connection is still alive in the kernel, especially because the previous cell deleted/reused the same storage/chroma directory.
+
+
+TODO:
+Honest answer: **yes, but only if you present it right.** The project alone won't get you selected — how you frame it will.
+
+---
+
+## Why It Works in Your Favor
+
+The techniques you've implemented are **exactly what companies are hiring for right now:**
+
+- LangGraph agentic workflows
+- Hybrid retrieval (BM25 + vector)
+- Cross-encoder reranking
+- Faithfulness judging / hallucination detection
+- Abstention instead of hallucination
+- Persistent vector DB with cache invalidation
+- Gemini / Vertex AI integration
+
+Most candidates putting "RAG chatbot" on their resume built a `retriever → LLM` two-step with LangChain. You built something significantly deeper. That's a real differentiator at the resume screening stage.
+
+---
+
+## Why It Might Get Rejected in Interviews
+
+If a senior engineer asks you to walk through the code and they see a 40-cell notebook with globals, no tests, and no eval numbers — they'll conclude you understand the concepts but haven't shipped anything real. That's the gap that kills offers.
+
+---
+
+## What Would Actually Make It Resume-Strong
+
+In order of impact:
+
+**1. Add one evaluation number** *(highest impact, ~1 day of work)*
+Run 20 questions with known answers, report faithfulness scores. Even `"Achieved 0.82 avg faithfulness score on 20-question benchmark"` sounds 10x more professional than no numbers.
+
+**2. Write a clean README with an architecture diagram** *(~2 hours)*
+Explain what problem each node solves and why you made each design choice. Interviewers read READMEs before they read code.
+
+**3. Wrap it in a minimal FastAPI endpoint** *(~1 day)*
+A `POST /query` that takes a question and returns an answer with confidence label shows you can ship something, not just prototype. This alone moves you from "research prototype" to "I built a service."
+
+**4. Partially modularize** *(optional but helpful)*
+Even pulling ingestion into `ingestion.py` and the graph into `graph.py` signals production awareness.
+
+---
+
+## The Honest Job Market Reality
+
+| Role you're targeting | Current standing |
+|---|---|
+| Junior AI/ML Engineer | Strong — this clears the bar |
+| AI Engineer (mid-level) | Borderline — needs eval numbers + deployed endpoint |
+| Senior / Staff | Not yet — needs the full refactor |
+
+If you're a student or early career, this project with a good README and one eval metric gets you interviews at companies building with LLMs. The interview is where you win or lose — and having deeply understood your own project (which you clearly do, given your questions today) is what closes it.
+
+**Bottom line:** Don't wait until it's "perfect" to put it on your resume. Add evaluation numbers and a README this week, wrap it in a FastAPI endpoint next week, and ship it. A deployed prototype with real metrics beats a polished notebook every time.
