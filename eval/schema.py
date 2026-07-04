@@ -34,7 +34,6 @@ def load_benchmark(path=DEFAULT_PATH) -> list[BenchmarkRow]:
     dupes = [i for i, c in Counter(ids).items() if c > 1]
     if dupes:
         raise ValueError(f"duplicate ids in benchmark: {dupes}")
-    # out_of_scope rows should have no supporting context (they must abstain)
     for r in rows:
         if r.difficulty == "out_of_scope" and r.ground_truth_contexts:
             raise ValueError(f"{r.id}: out_of_scope row should have empty ground_truth_contexts")

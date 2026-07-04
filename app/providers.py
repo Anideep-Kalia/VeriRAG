@@ -50,9 +50,10 @@ _BUILDERS = {
 }
 
 
-def build_chat_model(model: str, temperature: float | None = None):
-    """Build a LangChain chat model for the provider named in settings.llm_provider."""
-    provider = (settings.llm_provider or "gemini").lower()
+def build_chat_model(model: str, temperature: float | None = None, provider: str | None = None):
+    """Build a LangChain chat model. Provider defaults to settings.llm_provider;
+    pass `provider` to override (e.g. run the eval judge on ollama while the pipeline stays on groq)."""
+    provider = (provider or settings.llm_provider or "gemini").lower()
     if provider not in _BUILDERS:
         raise ValueError(
             f"Unknown LLM_PROVIDER={provider!r}; choose one of {sorted(set(_BUILDERS))}"

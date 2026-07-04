@@ -26,7 +26,7 @@ class QueryOutput(BaseModel):
 llm = build_chat_model(settings.llm_model)
 
 # Fast path: query rewriting / expansion.
-llm_flash = build_chat_model(settings.llm_flash_model)
+llm_flash = build_chat_model(settings.llm_flash_model, provider=settings.llm_flash_provider or None)
 llm_compression = llm_flash
 
 structured_llm_flash = llm_flash.with_structured_output(QueryOutput)

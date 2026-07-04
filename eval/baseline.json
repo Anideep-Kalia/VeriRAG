@@ -1,0 +1,8 @@
+{
+  "faithfulness": null,
+  "context_precision": null,
+  "context_recall": null,
+  "answer_relevancy": null,
+  "hallucination_rate": null,
+  "abstention_accuracy": 1.0
+}

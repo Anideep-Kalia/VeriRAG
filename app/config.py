@@ -9,8 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # --- provider switch (gemini | openai | groq | ollama) ---
-    llm_provider: str = "gemini"
+    # --- provider switch (gemini | openai | groq | ollama); one lane per role ---
+    llm_provider: str = "gemini"        # main: grounded generation + faithfulness node
+    llm_flash_provider: str = ""        # fast: query rewrite/expansion + compression; blank = same as llm_provider
 
     # --- API keys (blank defaults; real values only in .env) ---
     google_api_key: str = ""
@@ -32,8 +33,13 @@ class Settings(BaseSettings):
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     # --- evaluation (Week 2): use a CHEAP judge; a full run is hundreds of calls ---
+    eval_judge_provider: str = ""                # blank = same as llm_provider; set e.g. "ollama" to judge locally while the pipeline stays on groq
     eval_judge_model: str = "gemini-2.5-flash"   # RAGAS/DeepEval judge (built via provider factory)
     eval_fail_threshold: float = 0.6             # per-metric cutoff for failed_cases.csv
+
+    # --- experiment tracking (Week 3) ---
+    mlflow_tracking_uri: str = "sqlite:///mlflow.db"  # local sqlite store (works with `mlflow ui`); use http://localhost:5000 for the docker server
+    mlflow_experiment: str = "verirag-eval"
 
     # --- chunking / storage ---
     chunk_size: int = 1000

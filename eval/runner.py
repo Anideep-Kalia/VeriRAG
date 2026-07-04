@@ -31,12 +31,14 @@ FAILED_PATH = Path("failed_cases.csv")
 # 1. Predictions
 # ──────────────────────────────────────────────────────────────────────────────
 
+# parser to noramlize the LLM outputs to a single string
 def _answer_text(answer):
     if isinstance(answer, list):
         return " ".join(item.get("text", "") for item in answer).strip()
     return str(answer or "").strip()
 
 
+# RAG run against rows of questions present in benchmark.jsonl
 def collect_predictions(rows):
     from app.graph import build_graph
 
@@ -44,11 +46,16 @@ def collect_predictions(rows):
     preds = []
     for i, row in enumerate(rows, start=1):
         print(f"[{i}/{len(rows)}] {row.id}: {row.question[:70]}")
-        result = graph.invoke({
-            "query": row.question,
-            "iteration": 0,
-            "faithfulness_retry_count": 0,
-        })
+        try:
+            result = graph.invoke({
+                "query": row.question,
+                "iteration": 0,
+                "faithfulness_retry_count": 0,
+            })
+        except Exception as e:
+            # One bad row shouldn't sink a long run — record it and keep going.
+            print(f"    !! pipeline error, skipping row: {e}")
+            result = {"error": str(e)}
         contexts = [d.page_content for d in (result.get("documents") or [])]
         preds.append({
             "id": row.id,
@@ -60,6 +67,7 @@ def collect_predictions(rows):
             "contexts": contexts,
             "abstained": result.get("abstention_decision") == "abstain",
             "answer_source": result.get("answer_source", ""),
+            "error": result.get("error"),
         })
     return preds
 
@@ -71,7 +79,24 @@ def collect_predictions(rows):
 def _judge_model():
     from app.providers import build_chat_model
 
-    return build_chat_model(settings.eval_judge_model)
+    return build_chat_model(settings.eval_judge_model, provider=settings.eval_judge_provider or None)
+
+
+def _patch_legacy_ragas_imports():
+    """ragas hard-imports langchain_community.chat_models.vertexai, which was
+    removed in langchain-community 0.4+. We never use ragas' Vertex path (we pass
+    our own judge), so stub it just enough to let ragas import."""
+    import sys
+    import types
+
+    mod = "langchain_community.chat_models.vertexai"
+    if mod not in sys.modules:
+        stub = types.ModuleType(mod)
+        stub.ChatVertexAI = type("ChatVertexAI", (), {})
+        sys.modules[mod] = stub
+    import langchain_community.llms as L
+    if not hasattr(L, "VertexAI"):
+        L.VertexAI = type("VertexAI", (), {})
 
 
 def run_ragas(answerable):
@@ -79,8 +104,10 @@ def run_ragas(answerable):
     if not answerable:
         return {}, {}
     try:
+        _patch_legacy_ragas_imports()
         from ragas import EvaluationDataset, evaluate
         from ragas.embeddings import LangchainEmbeddingsWrapper
+        from ragas.run_config import RunConfig
         from ragas.llms import LangchainLLMWrapper
         from ragas.metrics import (
             Faithfulness,
@@ -101,7 +128,7 @@ def run_ragas(answerable):
         ds = EvaluationDataset.from_list(samples)
         metrics = [
             Faithfulness(),
-            ResponseRelevancy(),
+            ResponseRelevancy(strictness=1),  # Groq allows n<=1; default strictness=3 sends n=3 -> 400
             LLMContextPrecisionWithReference(),
             LLMContextRecall(),
         ]
@@ -110,13 +137,15 @@ def run_ragas(answerable):
             metrics=metrics,
             llm=LangchainLLMWrapper(_judge_model()),
             embeddings=LangchainEmbeddingsWrapper(get_embeddings()),
+            # ponytail: 2 workers dodges Groq rate-limit timeouts; raise if you have a paid tier
+            run_config=RunConfig(max_workers=2, timeout=300),
         )
         df = result.to_pandas()
     except Exception as e:
         print(f"[ragas] skipped: {e}")
         return {}, {}
 
-    # Map RAGAS column names -> our canonical metric keys (resilient to renames).
+    # RAGAS renames its output columns between versions 
     wanted = {
         "faithfulness": "faithful",
         "answer_relevancy": "relevan",
@@ -160,6 +189,7 @@ def run_deepeval(answerable):
     if not scored:
         return None, {}
     try:
+        _patch_legacy_ragas_imports()
         from deepeval.metrics import HallucinationMetric
         from deepeval.models.base_model import DeepEvalBaseLLM
         from deepeval.test_case import LLMTestCase
@@ -229,6 +259,8 @@ def write_failed_cases(preds, ragas_rows, deepeval_rows, threshold):
         rg = ragas_rows.get(rid, {})
         hall = deepeval_rows.get(rid)
         reasons = []
+        if p.get("error"):
+            reasons.append("pipeline_error")
         if p["difficulty"] == "out_of_scope" and not p["abstained"]:
             reasons.append("answered_out_of_scope")
         for metric in ("faithfulness", "context_recall", "answer_relevancy", "context_precision"):
@@ -263,7 +295,7 @@ def write_failed_cases(preds, ragas_rows, deepeval_rows, threshold):
     return len(rows)
 
 
-def run(limit=None, skip_metrics=False):
+def run(limit=None, skip_metrics=False, track=True):
     rows = load_benchmark()
     if limit:
         rows = rows[:limit]
@@ -310,6 +342,14 @@ def run(limit=None, skip_metrics=False):
     REPORT_PATH.write_text(json.dumps(report, indent=2), encoding="utf-8")
     n_failed = write_failed_cases(preds, ragas_rows, deepeval_rows, settings.eval_fail_threshold)
 
+    if track:
+        try:
+            from eval.tracking import log_to_mlflow
+            run_id = log_to_mlflow(report, [REPORT_PATH, FAILED_PATH])
+            print(f"Logged run {run_id[:8]} to MLflow experiment '{settings.mlflow_experiment}'.")
+        except Exception as e:
+            print(f"[mlflow] skipped: {e}")
+
     print("\n=== Aggregate metrics ===")
     for k, v in metrics.items():
         print(f"  {k:20} {v}")
@@ -321,8 +361,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=None, help="evaluate only first N rows")
     parser.add_argument("--skip-metrics", action="store_true", help="predictions only, no judge calls")
+    parser.add_argument("--no-track", action="store_true", help="skip MLflow logging")
     args = parser.parse_args(argv)
-    run(limit=args.limit, skip_metrics=args.skip_metrics)
+    run(limit=args.limit, skip_metrics=args.skip_metrics, track=not args.no_track)
 
 
 if __name__ == "__main__":

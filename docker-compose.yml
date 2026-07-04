@@ -1,4 +1,4 @@
-# Week 1: app only. mlflow + postgres get added in Week 3.
+# Week 3: app + MLflow tracking server backed by Postgres.
 services:
   app:
     build: .
@@ -9,3 +9,39 @@ services:
     volumes:
       - ./storage:/app/storage        # persisted Chroma index + metadata
       - ./documents:/app/documents    # source PDFs (for `python -m app.ingest`)
+
+  # MLflow tracking server. Point the eval runner at it with:
+  #   MLFLOW_TRACKING_URI=http://localhost:5000 ./.venv/bin/python -m eval.runner
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.17.2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # ponytail: inline pip keeps us on the official image; bake a Dockerfile if startup cost matters
+    command: >
+      sh -c "pip install --no-cache-dir psycopg2-binary >/dev/null &&
+             mlflow server --host 0.0.0.0 --port 5000
+             --backend-store-uri postgresql://mlflow:mlflow@postgres/mlflow
+             --artifacts-destination /mlartifacts --serve-artifacts"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlartifacts:/mlartifacts
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow
+      POSTGRES_DB: mlflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+  mlartifacts:

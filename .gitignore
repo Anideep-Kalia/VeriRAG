@@ -7,3 +7,10 @@ venv/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+
+# eval run artifacts (eval/baseline.json IS committed; these regenerate per run)
+mlflow.db
+mlruns/
+mlartifacts/
+evaluation_report.json
+failed_cases.csv

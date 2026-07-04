@@ -2,7 +2,10 @@
 #   ./.venv/bin/python -m pip install -r eval/requirements-eval.txt
 # Pin exactly with `pip freeze | grep -Ei 'ragas|deepeval|datasets|pandas'` after a green run.
 
-ragas>=0.2,<0.3
+# ragas still hard-imports the sunset langchain_community.chat_models.vertexai;
+# runner.py stubs that at runtime (see _patch_legacy_ragas_imports). Verified on 0.4.3.
+ragas>=0.4
 deepeval>=1.0
 datasets>=2.19
 pandas>=2.2
+mlflow>=2.14        # Week 3 experiment tracking
