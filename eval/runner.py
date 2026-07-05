@@ -128,7 +128,7 @@ def run_ragas(answerable):
         ds = EvaluationDataset.from_list(samples)
         metrics = [
             Faithfulness(),
-            ResponseRelevancy(strictness=1),  # Groq allows n<=1; default strictness=3 sends n=3 -> 400
+            ResponseRelevancy(strictness=2),  # Groq allows n<=1; default strictness=3 sends n=3 -> 400
             LLMContextPrecisionWithReference(),
             LLMContextRecall(),
         ]
