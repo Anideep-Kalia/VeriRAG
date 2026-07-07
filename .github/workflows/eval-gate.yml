@@ -1,12 +1,9 @@
 name: eval-gate
 
-# Week 4: on every PR / push to main, run the benchmark eval and fail the build if
-# quality regressed vs eval/baseline.json. This is the automated version of `eval.gate`.
-
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, v2]
   workflow_dispatch:
 
 jobs:
