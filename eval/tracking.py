@@ -17,7 +17,8 @@ def log_to_mlflow(report: dict, artifacts=()) -> str:
 
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     mlflow.set_experiment(settings.mlflow_experiment)
-    with mlflow.start_run() as run:
+    run_name = f"{report.get('timestamp', '')}_{report.get('params', {}).get('llm_model', 'model')}"
+    with mlflow.start_run(run_name=run_name) as run:
         mlflow.log_params(report.get("params", {}))
         # MLflow metrics must be numeric — drop the None/NaN ones (e.g. a skipped judge).
         metrics = {

@@ -1,0 +1,69 @@
+name: eval-gate
+
+# Week 4: on every PR / push to main, run the benchmark eval and fail the build if
+# quality regressed vs eval/baseline.json. This is the automated version of `eval.gate`.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  checks:
+    # Fast, no secrets: benchmark validity + gate logic + modules compile.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pydantic pydantic-settings
+      - name: Validate benchmark
+        run: python -m eval.schema
+      - name: Gate logic self-test
+        run: python -m eval.gate --selftest
+      - name: Compile eval modules
+        run: python -m py_compile eval/schema.py eval/gate.py eval/runner.py eval/tracking.py
+
+  eval-gate:
+    # The real regression gate: run the benchmark, then fail if any metric dropped vs the baseline.
+    # Ollama isn't available on the runner, so the judge runs on Groq. Requires the GROQ_API_KEY secret.
+    runs-on: ubuntu-latest
+    needs: checks
+    env:
+      LLM_PROVIDER: groq
+      LLM_MODEL: llama-3.3-70b-versatile
+      LLM_FLASH_MODEL: llama-3.1-8b-instant
+      EVAL_JUDGE_MODEL: llama-3.1-8b-instant   # cheap judge; EVAL_JUDGE_PROVIDER unset -> same as LLM_PROVIDER (groq)
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      EVAL_LIMIT: "20"                         # rows scored per run; raise to 32 for the full benchmark
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Cache HuggingFace models (embeddings + reranker)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ runner.os }}-nomic-minilm
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install -r eval/requirements-eval.txt
+      - name: Build the index from the committed PDFs
+        run: python -m app.ingest
+      - name: Run the benchmark eval
+        run: python -m eval.runner --limit "${EVAL_LIMIT}" --no-track
+      - name: Regression gate vs baseline
+        run: python -m eval.gate --tolerance 0.1
+      - name: Upload eval artifacts
+        if: always()                           # keep the report/CSV even when the gate fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: |
+            evaluation_report.json
+            failed_cases.csv
