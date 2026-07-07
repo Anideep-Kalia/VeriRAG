@@ -1,7 +1,7 @@
-"""Week 3: baseline regression gate.
+"""baseline regression gate.
 
 Compares the latest evaluation_report.json against a committed baseline (eval/baseline.json)
-and exits non-zero if any metric regressed beyond --tolerance. This is the check CI (Week 4)
+and exits non-zero if any metric regressed beyond --tolerance. This is the check CI
 runs to block a merge that makes retrieval/answer quality worse.
 
   python -m eval.gate              # compare current report vs baseline; exit 1 on regression

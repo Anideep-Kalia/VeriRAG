@@ -1,8 +1,11 @@
-"""Week 3: log an evaluation run to MLflow (params + metrics + artifacts).
+"""log an evaluation run to MLflow (params + metrics + artifacts).
 
 Backend is settings.mlflow_tracking_uri — default local sqlite (works with `mlflow ui`);
 set MLFLOW_TRACKING_URI=http://localhost:5000 to use the docker postgres-backed server.
 """
+
+# tags each run with the git commit it was run at, so a score is always traceable back to the exact code that produced it.
+# Without it, each eval.runner run just overwrites evaluation_report.json — you only ever see the latest result. MLflow keeps every run.
 from pathlib import Path
 
 from app.config import settings
