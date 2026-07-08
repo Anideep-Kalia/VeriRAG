@@ -25,42 +25,49 @@ hallucinating** when the answer isn't in the documents.
 
 ## 🏗️ Architecture
 
+**How a question flows through VeriRAG** — it keeps trying, and only answers when the sources back it up.
+
 ```mermaid
 flowchart TD
-    subgraph Ingest["📥 Ingestion (offline, one-time)"]
-        PDF["PDFs<br/>documents/pdfs/"] --> SPLIT["Chunk<br/>1000 chars / 150 overlap"]
-        SPLIT --> EMB["nomic-embed<br/>embeddings"]
-        EMB --> CHROMA[("Chroma<br/>vector index")]
-        SPLIT --> BM25[("BM25<br/>lexical index")]
-    end
+    Q([" 🙋 Question "]):::io --> UQ(" 🧠 Understand<br/>the query "):::step
+    UQ --> R(" 📚 Retrieve<br/>keywords + meaning "):::step
+    R --> RK{" 🎯 Relevant<br/>enough? "}:::gate
+    RK -- no --> UQ
+    RK -- yes --> G(" ✍️ Generate<br/>grounded answer "):::step
+    G --> F{" ⚖️ Faithful to<br/>the sources? "}:::gate
+    F -- no, retry --> G
+    F -- yes --> A([" ✅ Answer + citations "]):::good
+    F -- no evidence --> I([" 🙅 I don't know "]):::warn
+    DB[(" 🗄️ Document index ")]:::data -.-> R
 
-    subgraph Serve["🧠 Query pipeline — LangGraph (app/)"]
-        Q(["User question"]) --> QI["query_intelligence<br/>rewrite + expand + step-back"]
-        QI --> HR["hybrid_retrieve<br/>BM25 + vector"]
-        HR --> RR["rerank<br/>cross-encoder + filter"]
-        RR -->|low relevance| RQ["Refine_query"] --> QI
-        RR -->|ok| CO["Compress context"]
-        CO --> GEN["Generate answer"]
-        GEN --> FJ["Faithfulness Judge"]
-        FJ --> AT{"Abstention<br/>Threshold"}
-        AT -->|score low → retry| GEN
-        AT -->|grounded| ANS(["✅ Answer + citations"])
-        AT -->|no evidence| ABS(["🚫 I don't know"])
-    end
+    classDef step fill:#EEF2FF,stroke:#6366F1,color:#1E1B4B;
+    classDef gate fill:#FEF9C3,stroke:#EAB308,color:#713F12;
+    classDef io   fill:#F1F5F9,stroke:#64748B,color:#0F172A;
+    classDef good fill:#DCFCE7,stroke:#16A34A,color:#14532D;
+    classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D;
+    classDef data fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95;
+```
 
-    CHROMA --> HR
-    BM25 --> HR
+<sub>Maps to `app/graph.py`: **Understand** = `query_intelligence` · **Retrieve** = `hybrid_retrieve` · **Relevant?** = `rerank` (+ `Refine_query` loop) · **Generate** = `Compress → Generate` · **Faithful?** = `Faithfulness Judge` + `Abstention Threshold`.</sub>
 
-    subgraph Ops["📊 RAGOps — eval / tracking / CI (eval/ + .github/)"]
-        BENCH["benchmark.jsonl<br/>(answer key)"] --> RUN["eval.runner"]
-        RUN --> JUDGE["RAGAS + DeepEval<br/>(cheap judge)"]
-        JUDGE --> REPORT["evaluation_report.json<br/>+ failed_cases.csv"]
-        REPORT --> MLF[("MLflow<br/>tracking")]
-        REPORT --> GATE["eval.gate<br/>vs baseline.json"]
-        GATE --> CI["GitHub Actions<br/>block PR on regression"]
-    end
+**Behind the scenes** — how the index is built, and how quality is measured and guarded.
 
-    Serve -. "runs pipeline over" .-> RUN
+```mermaid
+flowchart LR
+    PDF([" 📄 PDFs "]):::io --> ING(" ⚙️ Ingest<br/>chunk + embed "):::step --> IDX[(" 🗄️ Document index ")]:::data
+    BENCH([" 📋 Benchmark "]):::io --> RUN(" 🧪 Run eval "):::step
+    RUN --> J(" ⚖️ RAGAS + DeepEval "):::step
+    J --> MLF[(" 📊 MLflow<br/>track over time ")]:::data
+    J --> GATE{" 🚦 Quality<br/>regressed? "}:::gate
+    GATE -- yes --> BLOCK([" ❌ Block the PR "]):::warn
+    GATE -- no --> PASS([" ✅ Allow merge "]):::good
+
+    classDef step fill:#EEF2FF,stroke:#6366F1,color:#1E1B4B;
+    classDef gate fill:#FEF9C3,stroke:#EAB308,color:#713F12;
+    classDef io   fill:#F1F5F9,stroke:#64748B,color:#0F172A;
+    classDef good fill:#DCFCE7,stroke:#16A34A,color:#14532D;
+    classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D;
+    classDef data fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95;
 ```
 
 ---
